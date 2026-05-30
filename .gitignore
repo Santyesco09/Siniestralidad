@@ -1,2 +1,4 @@
+# Excluir las carpetas con archivos de datos pesados
+datos_limpios/
 CSV/
 *.csv
