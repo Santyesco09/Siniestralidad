@@ -7,7 +7,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 print("=======================================================")
-print("=== FASE 1: LIMPIEZA CON LLAVES NATURALES (CONSERVAR) =")
+print("======== FASE 1: LIMPIEZA CON LLAVES NATURALES ========")
 print("=======================================================")
 
 # Definición de rutas del entorno local de datos
@@ -37,6 +37,14 @@ df_act_raw = cargar_limpio('VM_ACC_ACTOR_VIAL.csv')
 df_cau_raw = cargar_limpio('VM_ACC_CAUSA.csv')
 df_veh_raw = cargar_limpio('VM_ACC_VEHICULO.csv')
 df_via_raw = cargar_limpio('VM_ACC_VIA.csv')
+
+# ==========================================
+# CÓDIGO TEMPORAL PARA CAPTURA DEL ANTES
+# print("\n--- EVIDENCIA ANTES: ESTRUCTURA CRUDA DEL DATAFRAME ---")
+# print(df_acc_raw.info())
+# print(df_acc_raw[['LATITUD', 'LONGITUD', 'ANO_OCURRENCIA_ACC']].head(10))
+# print("------------------------------------------------------\n")
+# ==========================================
 
 # 2. FILTRADO TEMPORAL: Acotar el universo de hechos al alcance del proyecto (2020 y 2025)
 # Se eliminan puntos flotantes residuales del string (ej: '2020.0' -> '2020')
@@ -130,8 +138,8 @@ df_via.to_csv(os.path.join(CARPETA_DESTINO, 'dim_via.csv'), index=False)
 
 print(f"\n--> ¡FASE 1 COMPLETADA CON LLAVES NATURALES ORIGINALES!")
 print(f"Registros en Fact Hechos: {len(df_fact)}")
-print(f"Registros en Dim_Actor  : {len(df_act)} (Originales + Huérfanos integrados)")
-print(f"Registros en Dim_Causa  : {len(df_cau)} (Originales + Huérfanos integrados)")
-print(f"Registros en Dim_Vehiculo: {len(df_veh)} (Originales + Huérfanos integrados)")
-print(f"Registros en Dim_Via    : {len(df_via)} (Originales + Huérfanos integrados)")
-print(f"Todo listo en '{CARPETA_DESTINO}/' para subirlo a tu base de datos Oracle.")
+print(f"Registros en Dim_Actor  : {len(df_act)} ")
+print(f"Registros en Dim_Causa  : {len(df_cau)} ")
+print(f"Registros en Dim_Vehiculo: {len(df_veh)} ")
+print(f"Registros en Dim_Via    : {len(df_via)} ")
+print(f"Todo listo en '{CARPETA_DESTINO}/' para subirlo a la base de datos Oracle.")

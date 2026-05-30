@@ -10,12 +10,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.types import VARCHAR
 
 print("=======================================================")
-print("=== FASE 3: AUTOMATIZACIÓN DE CARGA A ORACLE DB ======")
+print("===== FASE 3: AUTOMATIZACIÓN DE CARGA A ORACLE DB =====")
 print("=======================================================")
 
 # 1. Configuración de la cadena de conexión de Oracle
-# NOTA: Cambiado a oracle+oracledb para total compatibilidad con Python 3.14
-# Recuerda reemplazar 'SYSTEM' y 'tu_password' por tus credenciales de acceso reales
 CONEXION_ORACLE = "oracle+oracledb://SYSTEM:Oracle2026*@localhost:1521/?service_name=XE"
 
 try:
