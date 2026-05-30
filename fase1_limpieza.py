@@ -11,8 +11,8 @@ print("======== FASE 1: LIMPIEZA CON LLAVES NATURALES ========")
 print("=======================================================")
 
 # Definición de rutas del entorno local de datos
-CARPETA_ORIGEN = "CSV"
-CARPETA_DESTINO = "datos_limpios"
+CARPETA_ORIGEN = "CSV/datos_sucios" # Carpeta con los CSV originales descargados del portal de la Secretaría de Movilidad
+CARPETA_DESTINO = "CSV/datos_limpios"
 
 # Crear el directorio de salida si no existe en el espacio de trabajo
 if not os.path.exists(CARPETA_DESTINO):
@@ -62,10 +62,10 @@ df_fact.drop(columns=['ANO_OCURRENCIA_ACC'], inplace=True, errors='ignore')
 
 print(f"-> Tabla de hechos filtrada: {len(df_fact)} accidentes detectados.")
 
-# 3. EXTRACCIÓN SELECCIÓND DE ATRIBUTOS (Mapeo al Modelo de Datos Fisico / DDL)
+# 3. EXTRACCIÓN SELECCIÓN DE ATRIBUTOS (Mapeo al Modelo de Datos Fisico / DDL)
 df_act = df_act_raw[['FORMULARIO', 'CONDICION', 'ESTADO', 'MUERTE_POSTERIOR', 'EDAD', 'GENERO']].copy()
-df_cau = df_cau_raw[['FORMULARIO', 'CODIGO_CAUSA', 'NOMBRE']].copy() 
-df_veh = df_veh_raw[['FORMULARIO', 'PLACA', 'CLASE', 'SERVICIO']].copy() 
+df_cau = df_cau_raw[['FORMULARIO', 'CODIGO_CAUSA', 'NOMBRE']].copy()
+df_veh = df_veh_raw[['FORMULARIO', 'PLACA', 'CLASE', 'SERVICIO']].copy()
 df_via = df_via_raw[['FORMULARIO', 'CODIGO_VIA', 'SUPERFICIE_RODADURA', 'ESTADO', 'CONDICIONES', 'AGENTE']].copy()
 
 # Renombrar atributos específicos para emparejar con las especificaciones del Data Warehouse
@@ -137,9 +137,9 @@ df_veh.to_csv(os.path.join(CARPETA_DESTINO, 'dim_vehiculo.csv'), index=False)
 df_via.to_csv(os.path.join(CARPETA_DESTINO, 'dim_via.csv'), index=False)
 
 print(f"\n--> ¡FASE 1 COMPLETADA CON LLAVES NATURALES ORIGINALES!")
-print(f"Registros en Fact Hechos: {len(df_fact)}")
-print(f"Registros en Dim_Actor  : {len(df_act)} ")
-print(f"Registros en Dim_Causa  : {len(df_cau)} ")
+print(f"Registros en Fact_Hechos: {len(df_fact)}")
+print(f"Registros en Dim_Actor: {len(df_act)} ")
+print(f"Registros en Dim_Causa: {len(df_cau)} ")
 print(f"Registros en Dim_Vehiculo: {len(df_veh)} ")
-print(f"Registros en Dim_Via    : {len(df_via)} ")
+print(f"Registros en Dim_Via: {len(df_via)} ")
 print(f"Todo listo en '{CARPETA_DESTINO}/' para subirlo a la base de datos Oracle.")

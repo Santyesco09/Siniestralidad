@@ -23,16 +23,15 @@ except Exception as e:
     print(f"❌ Error de conexión: {e}")
     exit()
 
-CARPETA_DATOS = "datos_limpios"
+CARPETA_DATOS = "CSV/datos_limpios"
 
 # Mapeo de archivos CSV limpios a las tablas de la Fase 2 en Oracle
-# NOTA: Se modificó 'FACT_ACCIDENTE' por 'FORMULARIO_ACCIDENTE' para acoplarse con tu SQL
 cargas = [
-    ('dim_actor.csv', 'VM_ACC_ACTOR_VIAL'),
-    ('dim_causa.csv', 'VM_ACC_CAUSA'),
-    ('dim_vehiculo.csv', 'VM_ACC_VEHICULO'),
-    ('dim_via.csv', 'VM_ACC_VIA'),
-    ('fact_accidente.csv', 'FORMULARIO_ACCIDENTE') # Hechos siempre va al final
+    ('dim_actor.csv', 'DIM_ACTOR_VIAL'),
+    ('dim_causa.csv', 'DIM_CAUSA'),
+    ('dim_vehiculo.csv', 'DIM_VEHICULO'),
+    ('dim_via.csv', 'DIM_VIA'),
+    ('fact_accidente.csv', 'FACT_ACCIDENTE') # Hechos siempre va al final
 ]
 
 for archivo, tabla_oracle in cargas:
@@ -46,7 +45,7 @@ for archivo, tabla_oracle in cargas:
         # Si estamos procesando la tabla de hechos, obligamos a mapear latitud y longitud como VARCHAR
         # Esto evita el choque de precisión binaria (FLOAT) con SQLAlchemy y Oracle
         dicitonario_tipos = {}
-        if tabla_oracle == 'FORMULARIO_ACCIDENTE':
+        if tabla_oracle == 'FACT_ACCIDENTE':
             # Convertimos las columnas del DataFrame a texto por seguridad en Pandas
             df['LATITUD'] = df['LATITUD'].astype(str)
             df['LONGITUD'] = df['LONGITUD'].astype(str)
