@@ -11,7 +11,7 @@ print("======== FASE 1: LIMPIEZA CON LLAVES NATURALES ========")
 print("=======================================================")
 
 # Definición de rutas del entorno local de datos
-CARPETA_ORIGEN = "CSV/datos_sucios" 
+CARPETA_ORIGEN = "CSV"
 CARPETA_DESTINO = "CSV/datos_limpios"
 
 # Crear el directorio de salida si no existe

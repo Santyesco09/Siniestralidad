@@ -34,30 +34,27 @@ cargas = [
     ('fact_accidente.csv', 'FACT_ACCIDENTE') # Hechos siempre va al final
 ]
 
-for archivo, tabla_oracle in cargas:
-    ruta_csv = os.path.join(CARPETA_DATOS, archivo)
-    
-    if os.path.exists(ruta_csv):
-        print(f"\n📥 Cargando {archivo} en la tabla {tabla_oracle}...")
-        df = pd.read_csv(ruta_csv, low_memory=False)
+# Abrir una conexión con autocommit activado correctamente
+with engine.connect().execution_options(autocommit=True) as conexion:
+
+    for archivo, tabla_oracle in cargas:
+        ruta_csv = os.path.join(CARPETA_DATOS, archivo)
         
-        # --- NUEVO AJUSTE EXCLUSIVO PARA LA TABLA DE HECHOS ---
-        # Si estamos procesando la tabla de hechos, obligamos a mapear latitud y longitud como VARCHAR
-        # Esto evita el choque de precisión binaria (FLOAT) con SQLAlchemy y Oracle
-        dicitonario_tipos = {}
-        if tabla_oracle == 'FACT_ACCIDENTE':
-            # Convertimos las columnas del DataFrame a texto por seguridad en Pandas
-            df['LATITUD'] = df['LATITUD'].astype(str)
-            df['LONGITUD'] = df['LONGITUD'].astype(str)
-            # Le indicamos a SQLAlchemy que las inyecte como VARCHAR en el motor
-            dicitonario_tipos = {'LATITUD': VARCHAR(100), 'LONGITUD': VARCHAR(100)}
-        
-        # if_exists='append' inserta los datos respetando las estructuras de la Fase 2
-        # index=False evita que se cree una columna extra con el índice de Pandas
-        # dtype pasa las reglas de tipos especiales cuando existen (como con la latitud/longitud)
-        df.to_sql(name=tabla_oracle, con=engine, if_exists='append', index=False, dtype=dicitonario_tipos)
-        print(f"✅ Éxito: {len(df)} registros insertados en {tabla_oracle}.")
-    else:
-        print(f"❌ Archivo no encontrado: {ruta_csv}")
+        if os.path.exists(ruta_csv):
+            print(f"\n📥 Cargando {archivo} en la tabla {tabla_oracle}...")
+            df = pd.read_csv(ruta_csv, low_memory=False)
+            
+            dicitonario_tipos = {}
+            if tabla_oracle == 'FACT_ACCIDENTE':
+                df['LATITUD'] = df['LATITUD'].astype(str)
+                df['LONGITUD'] = df['LONGITUD'].astype(str)
+                dicitonario_tipos = {'LATITUD': VARCHAR(100), 'LONGITUD': VARCHAR(100)}
+            
+            df.to_sql(name=tabla_oracle, con=conexion, if_exists='append', index=False, dtype=dicitonario_tipos)
+            
+            conexion.commit()  # ← COMMIT explícito tras cada tabla
+            print(f"✅ Éxito: {len(df)} registros insertados en {tabla_oracle}.")
+        else:
+            print(f"❌ Archivo no encontrado: {ruta_csv}")
 
 print("\n--> ¡FASE 3 FINALIZADA! Data Warehouse totalmente poblado.")

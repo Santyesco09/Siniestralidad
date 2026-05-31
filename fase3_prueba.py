@@ -1,101 +1,87 @@
 import pandas as pd
 import os
-import sys
 import warnings
-import sqlalchemy
-from sqlalchemy import create_engine
+
+from sqlalchemy import create_engine, text
 from sqlalchemy.types import VARCHAR
 
-# 1. Configuración del manejo de alertas de Python
+# Silenciar advertencias de Pandas o SQLAlchemy
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
-
-# Forzar la consola de Windows a usar UTF-8 para evitar el error UnicodeEncodeError (de los emojis/tildes)
-if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding='utf-8')
 
 print("=======================================================")
 print("===== FASE 3: AUTOMATIZACIÓN DE CARGA A ORACLE DB =====")
 print("=======================================================")
 
-# ==========================================
-# 2. CONFIGURACIÓN DE CONEXIÓN
-# ==========================================
-USER = "system"
-PASS = "Oracle2026*"  
-HOST = "localhost"
-PORT = "1521"
-SERVICE = "XEPDB1"
+# 1. Configuración de la cadena de conexión de Oracle
+CONEXION_ORACLE = "oracle+oracledb://SYSTEM:Oracle2026*@localhost:1521/?service_name=XE"
 
 try:
-    # Construcción de la URL de conexión para SQLAlchemy + oracledb
-    CADENA_CONEXION = f"oracle+oracledb://{USER}:{PASS}@{HOST}:{PORT}/?service_name={SERVICE}"
-    engine = create_engine(CADENA_CONEXION)
-    
-    # Verificación de conexión real e inmediata tocando la base de datos
-    with engine.connect() as conn:
-        conn.execute(sqlalchemy.text("SELECT 1 FROM DUAL"))
-    print("-> [OK] Conexión REAL y exitosa al Data Warehouse de Oracle.")
-    
+    engine = create_engine(CONEXION_ORACLE)
+    # Verificar la conexión con una consulta de prueba
+    with engine.connect() as test_conn:
+        test_conn.execute(text("SELECT 1 FROM DUAL"))
+    print("-> Conexión exitosa al Data Warehouse de Oracle usando Thin Driver (oracledb).")
 except Exception as e:
-    print(f"❌ Error crítico de conexión inicial: {e}")
-    print("Verifica si el servicio de Oracle y la instancia (XE/XEPDB1) están activos.")
-    sys.exit(1)
+    print(f"❌ Error de conexión: {e}")
+    exit()
 
 CARPETA_DATOS = "CSV/datos_limpios"
 
-# Mapeo ordenado: Primero se cargan todas las Dimensiones, SIEMPRE los Hechos al final
+# Mapeo de archivos CSV limpios a las tablas de la Fase 2 en Oracle
+# IMPORTANTE: Las dimensiones SIEMPRE van antes que la tabla de hechos
+# para respetar las restricciones de Foreign Key
 cargas = [
-    ('dim_actor.csv', 'DIM_ACTOR_VIAL'),
-    ('dim_causa.csv', 'DIM_CAUSA'),
+    ('dim_actor.csv',    'DIM_ACTOR_VIAL'),
+    ('dim_causa.csv',    'DIM_CAUSA'),
     ('dim_vehiculo.csv', 'DIM_VEHICULO'),
-    ('dim_via.csv', 'DIM_VIA'),
-    ('fact_accidente.csv', 'FACT_ACCIDENTE') 
+    ('dim_via.csv',      'DIM_VIA'),
+    ('fact_accidente.csv', 'FACT_ACCIDENTE')
 ]
 
-# ==========================================
-# 3. PROCESO DE INYECCIÓN TRANSACCIONAL
-# ==========================================
-try:
-    # engine.begin() abre una transacción única. Si una tabla falla, se aplica ROLLBACK automático
-    # para evitar dejar el Data Warehouse con datos parciales o corruptos.
-    with engine.begin() as connection:
-        for archivo, tabla_oracle in cargas:
-            ruta_csv = os.path.join(CARPETA_DATOS, archivo)
-            
-            if os.path.exists(ruta_csv):
-                print(f"\n📥 Cargando {archivo} en la tabla {tabla_oracle}...")
-                
-                # Leer el CSV forzando la lectura inicial limpia
+# CORRECCIÓN CLAVE PARA SQLALCHEMY 2.x:
+# - engine.begin() abre una transacción real y hace COMMIT automático al salir del bloque 'with'
+# - Si ocurre cualquier excepción, hace ROLLBACK automático para proteger la integridad
+# - engine.connect() con execution_options(autocommit=True) fue ELIMINADO en SQLAlchemy 2.x
+with engine.begin() as conexion:
+
+    for archivo, tabla_oracle in cargas:
+        ruta_csv = os.path.join(CARPETA_DATOS, archivo)
+
+        if os.path.exists(ruta_csv):
+            print(f"\n📥 Cargando {archivo} en la tabla {tabla_oracle}...")
+
+            try:
                 df = pd.read_csv(ruta_csv, low_memory=False)
-                
+
+                # Ajuste exclusivo para la tabla de hechos:
+                # Forzar LATITUD y LONGITUD a VARCHAR para evitar choques de precisión float con Oracle
                 dicitonario_tipos = {}
-                
-                # --- TRATAMIENTO DE DATOS EXCLUSIVO PARA LA TABLA DE HECHOS ---
                 if tabla_oracle == 'FACT_ACCIDENTE':
-                    print("   -> Parseando columna FECHA_HORA_ACC al tipo temporal DATE nativo de Oracle...")
-                    # Convertir la columna de texto a objetos DateTime reales de Pandas
-                    df['FECHA_HORA_ACC'] = pd.to_datetime(df['FECHA_HORA_ACC'], errors='coerce')
-                    
-                    # Mapeo seguro de coordenadas a VARCHAR para evitar conflictos de precisión float
-                    df['LATITUD'] = df['LATITUD'].astype(str)
+                    df['LATITUD']  = df['LATITUD'].astype(str)
                     df['LONGITUD'] = df['LONGITUD'].astype(str)
-                    dicitonario_tipos = {'LATITUD': VARCHAR(100), 'LONGITUD': VARCHAR(100)}
-                
-                # Inserción masiva optimizada de Pandas
+                    dicitonario_tipos = {
+                        'LATITUD':  VARCHAR(100),
+                        'LONGITUD': VARCHAR(100)
+                    }
+
+                # if_exists='append' respeta el DDL y las FK de la Fase 2
+                # index=False evita crear una columna extra con el índice de Pandas
                 df.to_sql(
-                    name=tabla_oracle, 
-                    con=connection, 
-                    if_exists='append', 
-                    index=False, 
+                    name=tabla_oracle,
+                    con=conexion,
+                    if_exists='append',
+                    index=False,
                     dtype=dicitonario_tipos
                 )
-                print(f"✅ Éxito: {len(df)} registros insertados con éxito en {tabla_oracle}.")
-            else:
-                print(f"❌ Archivo no encontrado obligatorio: {ruta_csv}")
-                
-    print("\n--> ¡FASE 3 FINALIZADA! Transacción confirmada en Oracle (COMMIT ejecutado automáticamente).")
 
-except Exception as e:
-    print(f"\n❌ ERROR CRÍTICO DURANTE LA INSERCIÓN: Proceso abortado.")
-    print(f"Detalle del error devuelto por el motor Oracle:\n{e}")
+                print(f"✅ Éxito: {len(df)} registros insertados en {tabla_oracle}.")
+
+            except Exception as e:
+                print(f"❌ Error al insertar en {tabla_oracle}: {e}")
+                raise  # Re-lanzar para que engine.begin() haga ROLLBACK y proteja la BD
+
+        else:
+            print(f"❌ Archivo no encontrado: {ruta_csv}")
+
+print("\n--> ¡FASE 3 FINALIZADA! Data Warehouse totalmente poblado.")
