@@ -6,65 +6,65 @@
 
 CREATE OR REPLACE VIEW V_CUBO_ACCIDENTALIDAD_2020 AS
 SELECT
-    -- Jerarquía de Tiempo: Mes -> Dia (Corregido a TO_CHAR)
-    TO_CHAR(f_acc.FECHA_ACC, 'MM') AS MES,
+    -- 1. Jerarquía Temporal
+    TO_CHAR(f_acc.FECHA_ACC, 'MM')                                       AS MES,
     f_acc.DIA_OCURRENCIA_ACC                                             AS DIA,
     
-    -- Causa
-    dm_causa.NOMBRE AS CAUSA,
+    -- 2. Dimensión Causa
+    dm_causa.NOMBRE                                                      AS CAUSA,
     
-    -- Actor Vial
-    dm_actor.CONDICION AS ACTOR_CONDICION,
-    dm_actor.ESTADO AS ACTOR_ESTADO,
-    dm_actor.EDAD AS ACTOR_EDAD,
-    dm_actor.GENERO AS ACTOR_SEXO, 
+    -- 3. Dimensión Actor Vial (Atributos Descriptivos)
+    dm_actor.CONDICION                                                   AS ACTOR_CONDICION,
+    dm_actor.ESTADO                                                      AS ACTOR_ESTADO,
+    dm_actor.GENERO                                                      AS ACTOR_SEXO, 
     
-    -- Vehículo
-    dim_vehiculo.CLASE AS VEHICULO_CLASE, 
+    -- 4. Dimensión Vehículo (Atributo Descriptivo)
+    dim_vehiculo.CLASE                                                   AS VEHICULO_CLASE, 
     
-    -- Vía
-    dim_via.ESTADO AS VIA_ESTADO,
-    dim_via.CONDICIONES AS VIA_CONDICIONES,
+    -- 5. Dimensión Geográfica y Vía
+    f_acc.LOCALIDAD,
+    f_acc.BARRIO,
+    dim_via.ESTADO                                                       AS VIA_ESTADO,
+    dim_via.CONDICIONES                                                  AS VIA_CONDICIONES,
+    f_acc.LATITUD,
+    f_acc.LONGITUD,
 
-    -- Medidas y KPIs
-    COUNT(f_acc.FORMULARIO)                  AS TOTAL_ACCIDENTES,
-    AVG(dm_actor.EDAD)                       AS EDAD_PROMEDIO,
-    
-    SUM(CASE WHEN f_acc.GRAVEDAD = 'CON MUERTOS' THEN 1 ELSE 0 END) AS TOTAL_FATALIDADES,
-    SUM(CASE WHEN f_acc.GRAVEDAD = 'CON HERIDOS' THEN 1 ELSE 0 END) AS TOTAL_HERIDOS,
+    -- 6. MEDIDAS Y KPIs (Métricas Agregadas)
+    COUNT(f_acc.FORMULARIO)                                              AS TOTAL_ACCIDENTES,
+    ROUND(AVG(dm_actor.EDAD), 2)                                         AS EDAD_PROMEDIO, -- Removido dm_actor.EDAD como columna base
+    SUM(CASE WHEN f_acc.GRAVEDAD = 'CON MUERTOS' THEN 1 ELSE 0 END)      AS TOTAL_FATALIDADES,
+    SUM(CASE WHEN f_acc.GRAVEDAD = 'CON HERIDOS' THEN 1 ELSE 0 END)      AS TOTAL_HERIDOS,
 
-    -- Clasificación condicional inteligencia de negocios
+    -- 7. Clasificación Condicional (Inteligencia de Negocios)
     CASE 
-        -- Alerta Crítica: Accidentes fatales recurrentes o causas graves
         WHEN SUM(CASE WHEN f_acc.GRAVEDAD = 'CON MUERTOS' THEN 1 ELSE 0 END) > 0 
              OR COUNT(f_acc.FORMULARIO) >= 10 THEN 'ALERTA: DESVIACIÓN CRÍTICA'
-        
-        -- Posible Anomalía: Comportamiento inusual en la vía o volumen moderado
         WHEN COUNT(f_acc.FORMULARIO) BETWEEN 5 AND 9 THEN 'POSIBLE ANOMALÍA'
-        
-        -- Operación Regular Bajo Control
         ELSE 'OPERACIÓN NORMAL'
     END AS DIAGNOSTICO_OPERATIVO
 
 FROM FACT_ACCIDENTE f_acc
+INNER JOIN DIM_ACTOR_VIAL dm_actor   ON f_acc.ID_ACCIDENTADO = dm_actor.ID_ACCIDENTADO
+INNER JOIN DIM_CAUSA dm_causa        ON f_acc.ID_CAUSA = dm_causa.ID_CAUSA
+INNER JOIN DIM_VEHICULO dim_vehiculo ON f_acc.ID_PLACA = dim_vehiculo.ID_PLACA
+INNER JOIN DIM_VIA dim_via           ON f_acc.ID_VIA = dim_via.ID_VIA
 
-JOIN DIM_ACTOR_VIAL dm_actor ON f_acc.ID_ACCIDENTADO = dm_actor.ID_ACCIDENTADO
-JOIN DIM_CAUSA dm_causa ON f_acc.ID_CAUSA = dm_causa.ID_CAUSA
-JOIN DIM_VEHICULO dim_vehiculo ON f_acc.ID_PLACA = dim_vehiculo.ID_PLACA
-JOIN DIM_VIA dim_via ON f_acc.ID_VIA = dim_via.ID_VIA
+-- FILTRO CRÍTICO: Asegurar la partición histórica correcta del cubo
+WHERE EXTRACT(YEAR FROM f_acc.FECHA_ACC) = 2020
 
-WHERE TO_CHAR(f_acc.FECHA_ACC, 'YYYY') = '2020'
-
-GROUP BY
+GROUP BY 
     TO_CHAR(f_acc.FECHA_ACC, 'MM'),
     f_acc.DIA_OCURRENCIA_ACC,
     dm_causa.NOMBRE,
     dm_actor.CONDICION,
     dm_actor.ESTADO,
-    dm_actor.EDAD,
-    dm_actor.GENERO,
-    dim_vehiculo.CLASE,
-    dim_via.ESTADO,
-    dim_via.CONDICIONES;
+    dm_actor.GENERO,       -- Mapeo directo para evitar el NULL
+    dim_vehiculo.CLASE,    -- Incluido de forma estricta
+    f_acc.LOCALIDAD,
+    f_acc.BARRIO,
+    dim_via.ESTADO,        -- Incluido de forma estricta
+    dim_via.CONDICIONES,   -- Incluido de forma estricta
+    f_acc.LATITUD,
+    f_acc.LONGITUD;
 
 -- SELECT * FROM V_CUBO_ACCIDENTALIDAD_2020;
