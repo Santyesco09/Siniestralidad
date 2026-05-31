@@ -21,50 +21,51 @@ TRUNCATE TABLE DIM_VIA;
 
 -- 2. DIMENSIÓN DE ACTOR VIAL
 CREATE TABLE DIM_ACTOR_VIAL (
-    ID_ACCIDENTADO   VARCHAR2(50) PRIMARY KEY, -- Llave natural (Formulario)
-    CONDICION        VARCHAR2(4000),           -- Conductor, Peatón, Pasajero, etc.
-    ESTADO           VARCHAR2(4000),           -- Vivo, Muerto, Herido
-    MUERTE_POSTERIOR VARCHAR2(20),             -- Ajustado a 20 para soportar "SIN DATA" / "NO REGISTRA"
-    EDAD             NUMBER,                   -- NUMBER para permitir cálculos matemáticos (AVG)
-    GENERO           VARCHAR2(50)              -- Ajustado a 50 para evitar truncados en contingencias del ETL
+    ID_ACCIDENTADO   VARCHAR2(100) PRIMARY KEY, -- Llave natural (Formulario)
+    CONDICION        VARCHAR2(4000),            -- Conductor, Peatón, Pasajero, etc.
+    ESTADO           VARCHAR2(4000),            -- Vivo, Muerto, Herido
+    MUERTE_POSTERIOR VARCHAR2(100),             -- Ajustado a 20 para soportar "SIN DATA" / "NO REGISTRA"
+    EDAD             NUMBER,             -- NUMBER para permitir cálculos matemáticos (AVG)
+    GENERO           VARCHAR2(100)              -- Ajustado a 50 para evitar truncados en contingencias del ETL
 );
 
 -- 3. DIMENSIÓN DE CAUSA (Validado)
 CREATE TABLE DIM_CAUSA (
-    ID_CAUSA     VARCHAR2(50) PRIMARY KEY,     -- Llave natural (Formulario)
-    CODIGO_CAUSA VARCHAR2(50),
-    NOMBRE       VARCHAR2(250)                 -- Espacio suficiente para descripción de hipótesis viales
+    ID_CAUSA     VARCHAR2(100) PRIMARY KEY,     -- Llave natural (Formulario)
+    CODIGO_CAUSA VARCHAR2(100),
+    NOMBRE       VARCHAR2(250)                  -- Espacio suficiente para descripción de hipótesis viales
 );
 
 -- 4. DIMENSIÓN DE VEHÍCULO (Validado)
 CREATE TABLE DIM_VEHICULO (
-    ID_PLACA VARCHAR2(50) PRIMARY KEY,         -- Llave natural (Formulario)
-    PLACA_ID VARCHAR2(50),                     -- Almacena la placa alfanumérica original
-    CLASE    VARCHAR2(100),                    -- Automóvil, Motocicleta, Camión
-    SERVICIO VARCHAR2(100)                     -- Particular, Público, Oficial
+    ID_PLACA VARCHAR2(100) PRIMARY KEY,         -- Llave natural (Formulario)
+    PLACA_ID VARCHAR2(100),                     -- Almacena la placa alfanumérica original
+    CLASE    VARCHAR2(100),                     -- Automóvil, Motocicleta, Camión
+    SERVICIO VARCHAR2(100)                      -- Particular, Público, Oficial
 );
 
 -- 5. DIMENSIÓN DE VÍA (Validado)
 CREATE TABLE DIM_VIA (
-    ID_VIA      VARCHAR2(50) PRIMARY KEY,      -- Llave natural (Formulario)
-    CODIGO_VIA  VARCHAR2(50),
-    SUPERFICIE  VARCHAR2(200),                 -- Asfalto, Tierra, Adoquín
-    ESTADO      VARCHAR2(200),                 -- Buena, Regular, Mala
-    CONDICIONES VARCHAR2(200),                 -- Seca, Mojada, Con niebla
-    AGENTE      VARCHAR2(20)                   -- Ajustado a 20 por seguridad de strings del ETL
+    ID_VIA      VARCHAR2(100) PRIMARY KEY,      -- Llave natural (Formulario)
+    CODIGO_VIA  VARCHAR2(100),
+    SUPERFICIE  VARCHAR2(200),                  -- Asfalto, Tierra, Adoquín
+    ESTADO      VARCHAR2(200),                  -- Buena, Regular, Mala
+    CONDICIONES VARCHAR2(200),                  -- Seca, Mojada, Con niebla
+    AGENTE      VARCHAR2(100)                   -- Ajustado a 20 por seguridad de strings del ETL
 );
 
 -- 6. TABLA DE HECHOS (Mapeo relacional de integridad)
 CREATE TABLE FACT_ACCIDENTE (
-    FORMULARIO          VARCHAR2(50) PRIMARY KEY, -- Llave primaria del hecho
-    ID_ACCIDENTADO      VARCHAR2(50),
-    ID_CAUSA            VARCHAR2(50),
-    ID_PLACA            VARCHAR2(50),
-    ID_VIA              VARCHAR2(50),
+    FORMULARIO          VARCHAR2(100) PRIMARY KEY, -- Llave primaria del hecho
+    ID_ACCIDENTADO      VARCHAR2(100),
+    ID_CAUSA            VARCHAR2(100),
+    ID_PLACA            VARCHAR2(100),
+    ID_VIA              VARCHAR2(100),
     
     -- Atributos de explotación analítica
-    FECHA_HORA_ACC      DATE,                     -- Tipo temporal nativo para jerarquías BI
-    DIA_OCURRENCIA_ACC  VARCHAR2(50),
+    FECHA_ACC           DATE,                     -- Tipo temporal nativo para jerarquías BI
+    HORA_ACC            VARCHAR2(50),
+    DIA_OCURRENCIA_ACC  VARCHAR2(100),
     DIRECCION           VARCHAR2(250),
     GRAVEDAD            VARCHAR2(100),
     CLASE_ACC           VARCHAR2(100),

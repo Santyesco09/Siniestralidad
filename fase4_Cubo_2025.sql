@@ -1,10 +1,10 @@
 /*
 ===========================================================================
- FASE 4: VISTA CUBO DE INFORMACIÓN DE ACCIDENTES 2020
+ FASE 4: VISTA CUBO DE INFORMACIÓN DE ACCIDENTES 2025
 ===========================================================================
 */
 
-CREATE OR REPLACE VIEW V_CUBO_ACCIDENTALIDAD_2020 AS
+CREATE OR REPLACE VIEW V_CUBO_ACCIDENTALIDAD_2025 AS
 SELECT
     -- Jerarquía de Tiempo: Mes -> Dia (Corregido a TO_CHAR)
     TO_CHAR(f_acc.FECHA_ACC, 'MM') AS MES,
@@ -53,7 +53,7 @@ JOIN DIM_CAUSA dm_causa ON f_acc.ID_CAUSA = dm_causa.ID_CAUSA
 JOIN DIM_VEHICULO dim_vehiculo ON f_acc.ID_PLACA = dim_vehiculo.ID_PLACA
 JOIN DIM_VIA dim_via ON f_acc.ID_VIA = dim_via.ID_VIA
 
-WHERE TO_CHAR(f_acc.FECHA_ACC, 'YYYY') = '2020'
+WHERE TO_CHAR(f_acc.FECHA_ACC, 'YYYY') = '2025'
 
 GROUP BY
     TO_CHAR(f_acc.FECHA_ACC, 'MM'),
@@ -67,4 +67,4 @@ GROUP BY
     dim_via.ESTADO,
     dim_via.CONDICIONES;
 
--- SELECT * FROM V_CUBO_ACCIDENTALIDAD_2020;
+-- SELECT * FROM V_CUBO_ACCIDENTALIDAD_2025;

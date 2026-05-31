@@ -1,20 +1,16 @@
 import pandas as pd
-import os
-import warnings # 1. Configuración del manejo de alertas de Python
-
+import warnings
 from sqlalchemy import create_engine
-from sqlalchemy.types import VARCHAR
 
 # Silenciar de forma absoluta cualquier tipo de UserWarning generado por Pandas o SQLAlchemy
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.filterwarnings("ignore")
 
 print("============================================================")
-print("===== FASE 4: CREACIÓN DEL CUBO LÓGICO Y DATA ANALYSIS =====")
+print("===== FASE 4: EXTRACCIÓN DE CONOCIMIENTO Y DATAMARTS ======")
 print("============================================================")
- 
-# 1. Configuración de la cadena de conexión de Oracle
-CONEXION_ORACLE = "oracle+oracledb://SYSTEM:Oracle2026*@localhost:1521/?service_name=XE"
+
+# 1. Configuración de la cadena de conexión optimizada de Oracle XE
+CONEXION_ORACLE = "oracle+oracledb://SYSTEM:Oracle2026*@localhost:1521/?service_name=XEPDB1"
 
 try:
     engine = create_engine(CONEXION_ORACLE)
@@ -23,32 +19,43 @@ except Exception as e:
     print(f"❌ Error de conexión: {e}")
     exit()
 
-    print("\n--- Fase 4: Creación del Cubo Lógico (Analítica) ---")
+print("\n📥 Extrayendo registros consolidados desde las vistas del cubo multidimensional...")
 
-    with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE VIEW V_CUBO_LOGISTICA_TRANSPORTE AS
-            SELECT
-                f.ID_VIAJE,
-                f.PLACA,
-                v.MODELO,
-                f.KM_RECORRIDOS,
-                f.GALONES,
-                ROUND(f.KM_RECORRIDOS / f.GALONES, 2) as RENDIMIENTO_KMG,
-                CASE
-                    WHEN (f.KM_RECORRIDOS / f.GALONES) < 4 THEN 'ALERTA: POSIBLE FUGA O ROBO'
-                    WHEN (f.KM_RECORRIDOS / f.GALONES) > 15 THEN 'ALERTA: FALLA SENSOR KM'
-                    ELSE 'OPERACIÓN NORMAL'
-                END as DIAGNOSTICO_BI
-            FROM FACT_VIAJES f
-            JOIN DIM_VEHICULOS v ON f.PLACA = v.PLACA
-        """))
-        conn.commit()
-    print("✅ Fase 4 finalizada: Cubo Lógico listo para explotación.")
+# 2. Carga y etiquetado de datos históricos de los dos periodos analíticos
+df_2020 = pd.read_sql("SELECT * FROM V_CUBO_ACCIDENTALIDAD_2020", engine)
+df_2025 = pd.read_sql("SELECT * FROM V_CUBO_ACCIDENTALIDAD_2025", engine)
 
-    # ==========================================
-    # RESULTADO FINAL: EXTRACCIÓN DE CONOCIMIENTO
-    # ==========================================
-    print("\n--- RESULTADO FINAL DEL CUBO LOGÍSTICO ---")
-    df_resultado = pd.read_sql("SELECT * FROM V_CUBO_LOGISTICA_TRANSPORTE", engine)
-    print(df_resultado.to_string())
+df_2020['ANIO_PERIODO'] = 2020
+df_2025['ANIO_PERIODO'] = 2025
+
+# 3. Consolidación en el DataFrame Maestro de explotación de negocio
+df_cubo = pd.concat([df_2020, df_2025], ignore_index=True)
+
+print("\n✅ Extracción y consolidación completada. Primeras filas del DataFrame resultante:")
+print(df_cubo.head())
+print(f"✅ DataWarehouse unificado: {len(df_cubo)} filas lógicas listas para estadistica.")
+
+
+# 1. ESTACIONALIDAD MENSUAL DE ACCIDENTES Y HERIDOS
+print("\n" + "="*65)
+print("\t1. ESTACIONALIDAD MENSUAL DE ACCIDENTES Y HERIDOS")
+print("="*65)
+
+meses = df_cubo.groupby(['ANIO_PERIODO', 'mes'])[['total_accidentes', 'total_heridos']].sum().reset_index()
+meses = meses.rename(columns={'mes': 'MES_NUM'})
+
+print(meses)
+print("\n[Métricas de Control de Variabilidad]")
+print(meses.describe())
+
+# 2. TOP 10 CAUSAS DE ACCIDENTALIDAD MÁS RECURRENTES
+print("\n" + "="*65)
+print("\t2. TOP 10 CAUSAS DE ACCIDENTALIDAD MÁS RECURRENTES")
+print("="*65)
+
+causas = df_cubo.groupby('causa')['total_accidentes'].sum().reset_index()
+causas_top = causas.sort_values(by='total_accidentes', ascending=False).head(10)
+
+print(causas_top)
+print("\n[Métricas de Control de Variabilidad]")
+print(causas.describe())
