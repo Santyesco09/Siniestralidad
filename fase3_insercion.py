@@ -2,12 +2,12 @@ import pandas as pd
 import os
 import warnings # 1. Configuración del manejo de alertas de Python
 
+from sqlalchemy import create_engine
+from sqlalchemy.types import VARCHAR
+
 # Silenciar de forma absoluta cualquier tipo de UserWarning generado por Pandas o SQLAlchemy
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
-
-from sqlalchemy import create_engine
-from sqlalchemy.types import VARCHAR
 
 print("=======================================================")
 print("===== FASE 3: AUTOMATIZACIÓN DE CARGA A ORACLE DB =====")
