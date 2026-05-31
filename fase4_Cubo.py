@@ -44,7 +44,7 @@ print("\n" + "="*65)
 print("\tGENERACIÓN DEL DATASET CONSOLIDADO (2020 - 2025)")
 print("="*65)
 
-RUTA_OUTPUT_BI = "CSV/POWER_BI/accidentalidad_bogota.csv"
+RUTA_OUTPUT_BI = "accidentalidad_2020_2025.csv"
 
 try:
     # index=False evita añadir una columna innecesaria de números de fila al modelo de datos de Power BI
