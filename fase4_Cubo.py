@@ -38,6 +38,15 @@ df_cubo = pd.concat([df_2020, df_2025], axis=0, ignore_index=True)
 print(f"✅ DataWarehouse unificado: {len(df_cubo)} registros analíticos listos para auditoría estadística.")
 
 # ==================================================================== #
+# REESTRUCTURACIÓN DE COLUMNAS EXIGIDAS PARA EL ARCHIVO PLANO CSV
+# ==================================================================== #
+# Crear columna indexada 'Siniestro' iniciando desde 1
+df_cubo.insert(0, 'Siniestro', range(1, len(df_cubo) + 1))
+
+# Crear columna 'Año' duplicando el valor de control temporal e insertarla en la segunda posición
+df_cubo.insert(1, 'Año', df_cubo['anio_periodo'])
+
+# ==================================================================== #
 # EXPORTACIÓN DEL DATAMART PARA POWER BI
 # ==================================================================== #
 print("\n" + "="*65)
@@ -50,7 +59,7 @@ try:
     # index=False evita añadir una columna innecesaria de números de fila al modelo de datos de Power BI
     df_cubo.to_csv(RUTA_OUTPUT_BI, index=False, encoding='utf-8-sig')
     print(f"✅ ¡ÉXITO! Dataset unificado exportado correctamente en: '{RUTA_OUTPUT_BI}'")
-    print("   Listo para ser importado de forma directa en Power BI.")
+    print("   Listo para ser importado de forma directa en Power BI con columnas 'Siniestro' y 'Año'.")
 except Exception as e:
     print(f"❌ Error crítico al escribir el archivo CSV: {e}")
 
@@ -89,15 +98,16 @@ print("\n[Métricas de Control de Variabilidad]")
 print(causas.describe())
 
 # ==================================================================== #
-# ANALISIS 4: Análisis de Siniestralidad por Día de la Semana
+# ANALISIS 4: Análisis de Siniestralidad por Franja Horaria (MODIFICADO)
 # ==================================================================== #
 print("\n" + "="*65)
-print("\t4. DISTRIBUCIÓN DE SINIESTRALIDAD POR DÍA DE LA SEMANA")
+print("\t4. DISTRIBUCIÓN DE SINIESTRALIDAD POR FRANJA HORARIA (HORA DEL DÍA)")
 print("="*65)
-dias = df_cubo.groupby(['anio_periodo', 'dia'])['total_accidentes'].sum().reset_index()
-print(dias.sort_values(by=['anio_periodo', 'total_accidentes'], ascending=[True, False]))
+# Se modificó la agrupación de 'dia' a 'hora' para evaluar la evolución temporal diaria
+horas_siniestros = df_cubo.groupby(['anio_periodo', 'hora'])['total_accidentes'].sum().reset_index()
+print(horas_siniestros.sort_values(by=['anio_periodo', 'total_accidentes'], ascending=[True, False]))
 print("\n[Métricas de Control de Variabilidad]")
-print(dias.describe())
+print(horas_siniestros.describe())
 
 # ==================================================================== #
 # ANALISIS 5: Tipología de Vehículos con Mayor Índice de Siniestralidad

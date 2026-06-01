@@ -157,7 +157,7 @@ def asegurar_integridad_dimension(df_dim, nombre_id_dim, columnas_descriptivas):
     return df_dim
 
 # REASIGNACIÓN CORRECTA CAPTURANDO EL VALOR DE RETORNO
-df_act = asegurar_integridad_dimension(df_act, 'ID_ACCIDENTADO', ['CONDICION', 'ESTADO', 'MUERTE_POSTERIOR', 'EDAD', 'GENERO'])
+df_act = asegurar_integridad_dimension(df_act, 'ID_ACCIDENTADO',  ['CONDICION', 'ESTADO', 'MUERTE_POSTERIOR', 'EDAD', 'GENERO'])
 df_cau = asegurar_integridad_dimension(df_cau, 'ID_CAUSA',        ['CODIGO_CAUSA', 'NOMBRE'])
 df_veh = asegurar_integridad_dimension(df_veh, 'ID_PLACA',        ['PLACA_ID', 'CLASE', 'SERVICIO'])
 df_via = asegurar_integridad_dimension(df_via, 'ID_VIA',          ['CODIGO_VIA', 'SUPERFICIE', 'ESTADO', 'CONDICIONES', 'AGENTE'])

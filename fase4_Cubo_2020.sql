@@ -1,14 +1,16 @@
 /*
 ===========================================================================
- FASE 4: VISTA CUBO DE INFORMACIÓN DE ACCIDENTES 2020
+ FASE 4: VISTA CUBO DE INFORMACIÓN DE ACCIDENTES 2020 (CORREGIDA)
 ===========================================================================
 */
 
 CREATE OR REPLACE VIEW V_CUBO_ACCIDENTALIDAD_2020 AS
 SELECT
-    -- 1. Jerarquía Temporal
+    -- 1. Jerarquía Temporal (Corregido uso de SUBSTR para campo VARCHAR2)
     TO_CHAR(f_acc.FECHA_ACC, 'MM')                                       AS MES,
-    f_acc.DIA_OCURRENCIA_ACC                                             AS DIA,
+    TO_CHAR(f_acc.FECHA_ACC, 'DD')                                       AS DIA,
+    f_acc.DIA_OCURRENCIA_ACC                                             AS DIA_SEMANA,
+    SUBSTR(f_acc.HORA_ACC, 1, 2)                                         AS HORA,
     
     -- 2. Dimensión Causa
     dm_causa.NOMBRE                                                      AS CAUSA,
@@ -19,7 +21,7 @@ SELECT
     dm_actor.GENERO                                                      AS ACTOR_SEXO, 
     
     -- 4. Dimensión Vehículo (Atributo Descriptivo)
-    dim_vehiculo.CLASE                                                   AS VEHICULO_CLASE, 
+    dim_vehiculo.CLASE                                                   AS TIPO_ACCIDENTE, 
     
     -- 5. Dimensión Geográfica y Vía
     f_acc.LOCALIDAD,
@@ -31,7 +33,7 @@ SELECT
 
     -- 6. MEDIDAS Y KPIs (Métricas Agregadas)
     COUNT(f_acc.FORMULARIO)                                              AS TOTAL_ACCIDENTES,
-    ROUND(AVG(dm_actor.EDAD), 2)                                         AS EDAD_PROMEDIO, -- Removido dm_actor.EDAD como columna base
+    ROUND(AVG(dm_actor.EDAD), 2)                                         AS EDAD_PROMEDIO,
     SUM(CASE WHEN f_acc.GRAVEDAD = 'CON MUERTOS' THEN 1 ELSE 0 END)      AS TOTAL_FATALIDADES,
     SUM(CASE WHEN f_acc.GRAVEDAD = 'CON HERIDOS' THEN 1 ELSE 0 END)      AS TOTAL_HERIDOS,
 
@@ -54,16 +56,18 @@ WHERE EXTRACT(YEAR FROM f_acc.FECHA_ACC) = 2020
 
 GROUP BY 
     TO_CHAR(f_acc.FECHA_ACC, 'MM'),
+    TO_CHAR(f_acc.FECHA_ACC, 'DD'),
     f_acc.DIA_OCURRENCIA_ACC,
+    SUBSTR(f_acc.HORA_ACC, 1, 2),
     dm_causa.NOMBRE,
     dm_actor.CONDICION,
     dm_actor.ESTADO,
-    dm_actor.GENERO,       -- Mapeo directo para evitar el NULL
-    dim_vehiculo.CLASE,    -- Incluido de forma estricta
+    dm_actor.GENERO,
+    dim_vehiculo.CLASE,
     f_acc.LOCALIDAD,
     f_acc.BARRIO,
-    dim_via.ESTADO,        -- Incluido de forma estricta
-    dim_via.CONDICIONES,   -- Incluido de forma estricta
+    dim_via.ESTADO,
+    dim_via.CONDICIONES,
     f_acc.LATITUD,
     f_acc.LONGITUD;
 
